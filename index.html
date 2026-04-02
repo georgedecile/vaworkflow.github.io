@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decile VA Service Blueprint</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f6f3;color:#1a1a1a;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #e5e3dc;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:15px;font-weight:600;letter-spacing:-.3px}.logo span{color:#6b5ce7}
+.view-badge{font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid #e5e3dc;color:#666;background:#f7f6f3}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn{font-size:13px;padding:7px 14px;border-radius:8px;border:1px solid #e5e3dc;cursor:pointer;background:#fff;color:#1a1a1a;transition:background .15s;white-space:nowrap}
+.btn:hover{background:#f0efeb}
+.btn-primary{background:#6b5ce7;color:#fff;border-color:#6b5ce7}
+.btn-primary:hover{background:#5a4cd4}
+.mode-view,.mode-edit{display:none}
+.mode-view.active,.mode-edit.active{display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;padding:10px 24px;background:#fff;border-bottom:1px solid #e5e3dc;font-size:12px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.blueprint-wrap{padding:24px;overflow-x:auto}
+.blueprint{min-width:1200px}
+.workflow-header-row{display:flex}
+.row-label-spacer{width:148px;flex-shrink:0}
+.workflow-headers{display:flex;flex:1}
+.workflow-header{flex:1;text-align:center;padding:9px 5px;font-size:11px;font-weight:600;color:#fff;border-right:1px solid rgba(255,255,255,.2)}
+.workflow-header:last-child{border-right:none}
+.layer-row{display:flex;min-height:100px;border-top:1px solid #e5e3dc}
+.layer-row:last-child{border-bottom:1px solid #e5e3dc}
+.row-label{width:148px;flex-shrink:0;padding:12px 13px;display:flex;flex-direction:column;justify-content:center;background:#fff;border-right:2px solid #e5e3dc}
+.row-label-name{font-size:12px;font-weight:600;margin-bottom:2px}
+.row-label-desc{font-size:10px;color:#888;line-height:1.3}
+.row-cells{display:flex;flex:1}
+.cell{flex:1;padding:7px 6px;border-right:1px dashed #e0ded7;background:#fff;display:flex;flex-direction:column;gap:5px;min-width:0}
+.cell:last-child{border-right:none}
+.layer-sp .cell{flex-direction:row;flex-wrap:wrap;align-content:flex-start}
+.divider-row{display:flex;align-items:center}
+.divider-label{width:148px;flex-shrink:0;padding:3px 13px;font-size:9.5px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;background:#fff;border-right:2px solid #e5e3dc}
+.divider-visibility{border-top:2.5px solid #6b5ce7}.divider-visibility .divider-label{color:#6b5ce7}
+.divider-internal{border-top:2.5px dashed #e5812f}.divider-internal .divider-label{color:#e5812f}
+.card{border-radius:7px;padding:7px 9px;font-size:11px;line-height:1.45;border:1px solid transparent;cursor:pointer;transition:box-shadow .15s,transform .1s}
+.card:hover{box-shadow:0 2px 10px rgba(0,0,0,.13);transform:translateY(-1px)}
+.card-title{font-weight:600;font-size:11px;margin-bottom:1px}
+.card-body{opacity:.8;font-size:10.5px}
+.card-hint{font-size:9.5px;opacity:.55;margin-top:3px;font-style:italic}
+.layer-fm .card{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
+.layer-va .card{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.layer-bs .card{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+.person-pill{border-radius:7px;padding:5px 8px;font-size:10.5px;border:1px solid transparent;cursor:pointer;transition:box-shadow .15s,transform .1s;display:inline-flex;flex-direction:column;align-items:flex-start;flex:0 0 auto;margin:2px 0}
+.person-pill:hover{box-shadow:0 2px 8px rgba(0,0,0,.13);transform:translateY(-1px)}
+.pill-name{font-size:11px;font-weight:600}
+.pill-role{font-size:9.5px;font-weight:400;opacity:.75;margin-top:1px}
+.pp-legal{background:#faf5ff;border-color:#e9d5ff;color:#6b21a8}
+.pp-fundops{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+.pp-accounting{background:#ecfdf5;border-color:#6ee7b7;color:#065f46}
+.pp-tech{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.pp-ops{background:#fef9c3;border-color:#fde047;color:#713f12}
+.pp-ar{background:#fdf2f8;border-color:#f5d0fe;color:#86198f}
+.empty-placeholder{font-size:10px;color:#ccc;text-align:center;padding:6px 4px;font-style:italic;flex:1;display:flex;align-items:center;justify-content:center}
+/* drawer */
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300}
+.drawer-overlay.open{display:block}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:480px;max-width:95vw;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.13);z-index:301;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.drawer.open{transform:translateX(0)}
+.drawer-header{padding:20px 22px 14px;border-bottom:1px solid #e5e3dc;display:flex;align-items:flex-start;gap:10px}
+.drawer-title{font-size:16px;font-weight:600;line-height:1.35;flex:1}
+.drawer-badge{font-size:11px;padding:3px 10px;border-radius:20px;margin-top:3px;flex-shrink:0}
+.drawer-close{background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1}
+.drawer-close:hover{color:#1a1a1a}
+.drawer-body{padding:18px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px}
+.dsec-label{font-size:10.5px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+.drawer-steps{display:flex;flex-direction:column;gap:8px}
+.drawer-step{display:flex;gap:10px;align-items:flex-start}
+.step-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;line-height:1.55;color:#1a1a1a}
+.drawer-links{display:flex;flex-direction:column;gap:7px}
+.dlink{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;border:1px solid #e5e3dc;text-decoration:none;color:#1a1a1a;font-size:13px;transition:background .15s}
+.dlink:hover{background:#f7f6f3;border-color:#c9c7bf}
+.dlink-icon{font-size:15px;flex-shrink:0}
+.dlink-sub{font-size:11px;color:#888;margin-top:1px}
+.drawer-tip{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:11px 14px;font-size:12.5px;color:#166534;line-height:1.6}
+/* edit */
+.edit-wrap{padding:24px;max-width:1100px;margin:0 auto}
+.edit-section{background:#fff;border-radius:12px;border:1px solid #e5e3dc;margin-bottom:18px;overflow:hidden}
+.edit-sec-hdr{padding:11px 18px;background:#f7f6f3;border-bottom:1px solid #e5e3dc;display:flex;align-items:center;justify-content:space-between}
+.edit-sec-title{font-size:14px;font-weight:600}
+.edit-cards-grid{padding:12px 18px;display:flex;flex-direction:column;gap:12px}
+/* collapsed card row */
+.edit-card{border:1px solid #e5e3dc;border-radius:10px;overflow:hidden}
+.edit-card-top{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;background:#fafaf9}
+.edit-card-top:hover{background:#f3f2ef}
+.edit-card-chevron{font-size:11px;color:#aaa;transition:transform .2s;flex-shrink:0}
+.edit-card-chevron.open{transform:rotate(90deg)}
+.edit-card-summary{flex:1;min-width:0}
+.edit-card-stitle{font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edit-card-smeta{font-size:11px;color:#888;margin-top:1px}
+/* expanded body */
+.edit-card-body{display:none;padding:14px 14px 16px;border-top:1px solid #e5e3dc;display:flex;flex-direction:column;gap:14px}
+.edit-card-body.open{display:flex}
+.ef-label{font-size:10.5px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.ei{width:100%;border:1px solid #e5e3dc;border-radius:6px;padding:6px 9px;font-size:13px;font-family:inherit;background:#fff;color:#1a1a1a}
+.ei:focus{outline:none;border-color:#6b5ce7}
+.eta{width:100%;border:1px solid #e5e3dc;border-radius:6px;padding:7px 9px;font-size:13px;font-family:inherit;background:#fff;color:#1a1a1a;resize:vertical;min-height:56px;line-height:1.5}
+.eta:focus{outline:none;border-color:#6b5ce7}
+.es{border:1px solid #e5e3dc;border-radius:6px;padding:5px 7px;font-size:12px;font-family:inherit;background:#fff;color:#1a1a1a}
+/* steps list */
+.step-list{display:flex;flex-direction:column;gap:6px}
+.step-row{display:flex;align-items:flex-start;gap:6px}
+.step-num-badge{width:22px;height:22px;border-radius:50%;background:#e5e3dc;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#555;flex-shrink:0;margin-top:5px}
+.step-row .eta{min-height:38px}
+/* link list */
+.link-list{display:flex;flex-direction:column;gap:8px}
+.link-row{display:flex;gap:6px;align-items:flex-start;background:#f7f6f3;border-radius:8px;padding:8px 10px}
+.link-fields{flex:1;display:flex;flex-direction:column;gap:5px}
+.link-row-inner{display:flex;gap:6px}
+/* person list */
+.person-list{display:flex;flex-direction:column;gap:7px}
+.person-row{display:flex;gap:6px;align-items:center;background:#f7f6f3;border-radius:8px;padding:7px 10px}
+.person-fields{flex:1;display:flex;gap:6px;flex-wrap:wrap}
+/* shared */
+.drag-handle{color:#ccc;cursor:grab;font-size:15px;user-select:none;flex-shrink:0;padding-top:2px}
+.drag-handle:active{cursor:grabbing}
+.del-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:18px;padding:0 3px;line-height:1;flex-shrink:0}
+.del-btn:hover{color:#c0392b}
+.add-row-btn{border:1.5px dashed #c9c7bf;border-radius:7px;padding:6px 10px;font-size:12px;color:#888;background:none;cursor:pointer;width:100%;margin-top:2px}
+.add-row-btn:hover{border-color:#6b5ce7;color:#6b5ce7}
+.add-card-btn{margin:0 18px 12px;border:1.5px dashed #c9c7bf;border-radius:8px;padding:7px;font-size:13px;color:#888;background:none;cursor:pointer;width:calc(100% - 36px)}
+.add-card-btn:hover{border-color:#6b5ce7;color:#6b5ce7}
+.edit-card-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:4px;border-top:1px solid #f0efeb}
+.tip-textarea{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.tip-textarea:focus{border-color:#16a34a}
+/* modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:26px;width:450px;max-width:90vw}
+.modal h3{font-size:17px;font-weight:600;margin-bottom:5px}
+.modal-p{font-size:13px;color:#666;margin-bottom:14px;line-height:1.5}
+.modal-sec{margin-bottom:14px}
+.modal-sec-lbl{font-size:12px;font-weight:600;color:#555;margin-bottom:5px}
+.copy-row{display:flex;gap:8px}
+.copy-input{flex:1;border:1px solid #e5e3dc;border-radius:8px;padding:7px 11px;font-size:13px;font-family:inherit;color:#1a1a1a;background:#f7f6f3}
+.copied{font-size:12px;color:#16a34a;margin-top:5px;display:none}
+.copied.show{display:block}
+.wf0{background:#378add}.wf1{background:#1d9e75}.wf2{background:#e5812f}.wf3{background:#d4537e}.wf4{background:#6b5ce7}.wf5{background:#639922}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:14px">
+    <div class="logo">Decile <span>VA</span> Service Blueprint</div>
+    <div class="view-badge" id="mode-badge">View mode</div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn" id="share-btn">Share link</button>
+    <button class="btn" id="export-btn" title="Download an updated .html file with all your edits baked in">Export updated file</button>
+    <button class="btn btn-primary" id="toggle-edit-btn">Edit blueprint</button>
+  </div>
+</div>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#c7d2fe"></div><span>Fund Manager</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#bbf7d0"></div><span>VA Frontstage</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fed7aa"></div><span>VA Backstage</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#e9d5ff"></div><span>Support person</span></div>
+  <div class="legend-item" style="margin-left:auto"><span style="display:inline-block;width:26px;height:2px;background:#6b5ce7;vertical-align:middle;margin-right:5px"></span><span>Line of visibility</span></div>
+  <div class="legend-item"><span style="display:inline-block;width:26px;border-top:2px dashed #e5812f;vertical-align:middle;margin-right:5px"></span><span>Line of internal interaction</span></div>
+  <span style="font-size:11px;color:#aaa;font-style:italic">Click any card or person for step-by-step details + links</span>
+</div>
+
+<div class="mode-view active" id="mode-view">
+  <div class="blueprint-wrap"><div class="blueprint" id="blueprint-view"></div></div>
+</div>
+<div class="mode-edit" id="mode-edit">
+  <div class="edit-wrap" id="edit-wrap"></div>
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div style="flex:1">
+      <div class="drawer-title" id="drawer-title"></div>
+      <span class="drawer-badge" id="drawer-badge"></span>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">×</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</div>
+
+<div class="modal-overlay" id="share-modal">
+  <div class="modal">
+    <h3>Share this blueprint</h3>
+    <p class="modal-p">Share the view link with your new hire. Keep the edit link for managers only.</p>
+    <div class="modal-sec"><div class="modal-sec-lbl">View link (new hire)</div>
+      <div class="copy-row"><input class="copy-input" id="vlink" readonly><button class="btn btn-primary" onclick="copyLink('vlink','cv')">Copy</button></div>
+      <div class="copied" id="cv">Copied!</div>
+    </div>
+    <div class="modal-sec"><div class="modal-sec-lbl">Edit link (managers only)</div>
+      <div class="copy-row"><input class="copy-input" id="elink" readonly><button class="btn" onclick="copyLink('elink','ce')">Copy</button></div>
+      <div class="copied" id="ce">Copied!</div>
+    </div>
+    <button class="btn" style="width:100%" onclick="document.getElementById('share-modal').classList.remove('open')">Done</button>
+  </div>
+</div>
+
+<script>
+const SL='https://fi-vclab.slack.com/archives/';
+const HA='https://decileadmin.decilehub.com';
+const WF=[
+  {id:'lp-onboarding',label:'LP Onboarding & Closing',cc:'wf0'},
+  {id:'fund-formation',label:'Fund Formation',cc:'wf1'},
+  {id:'capital-ops',label:'Capital Calls & Distributions',cc:'wf2'},
+  {id:'compliance',label:'Compliance & ADV Filings',cc:'wf3'},
+  {id:'account-mgmt',label:'Account Management & Support',cc:'wf4'},
+  {id:'ar-billing',label:'AR / Invoicing',cc:'wf5'},
+];
+const LY=[
+  {id:'fm',label:'Fund Manager',desc:'Customer actions & requests',cls:'layer-fm'},
+  {id:'va-front',label:'VA — Frontstage',desc:'Visible to fund manager',cls:'layer-va'},
+  {id:'va-back',label:'VA — Backstage',desc:'Behind the scenes',cls:'layer-bs'},
+  {id:'support',label:'Support Processes',desc:'People who help',cls:'layer-sp'},
+];
+const DIV=[
+  {after:'va-front',label:'Line of visibility',cls:'divider-visibility'},
+  {after:'va-back',label:'Line of internal interaction',cls:'divider-internal'},
+];
+const PEOPLE={
+  'lp-onboarding':[{n:'Sebastian',r:'AML/KYC',c:'pp-legal'},{n:'Sujey',r:'Fund Ops',c:'pp-fundops'}],
+  'fund-formation':[{n:'Magdalena',r:'Legal Ops',c:'pp-legal'},{n:'Sujey',r:'Fund Ops',c:'pp-fundops'},{n:'GORA Law',r:'Ext. Legal',c:'pp-legal'},{n:'Brandon',r:'Fund Accounting',c:'pp-accounting'}],
+  'capital-ops':[{n:'Brandon',r:'Fund Accounting',c:'pp-accounting'},{n:'Katrina',r:'Accounting',c:'pp-accounting'},{n:'Austin',r:'Hub Product',c:'pp-tech'}],
+  'compliance':[{n:'Sebastian',r:'AML/KYC',c:'pp-legal'},{n:'Magdalena',r:'Legal Ops',c:'pp-legal'},{n:'Sujey',r:'Registered Agent',c:'pp-fundops'},{n:'GORA Law',r:'Ext. Legal',c:'pp-legal'}],
+  'account-mgmt':[{n:'Magdalena',r:'VP Agreements',c:'pp-legal'},{n:'Sujey',r:'GP Transfers',c:'pp-fundops'},{n:'Austin',r:'Hub Product',c:'pp-tech'},{n:'Alexia',r:'Escalation',c:'pp-ops'},{n:'Mike',r:'Strategic',c:'pp-ops'}],
+  'ar-billing':[{n:'Alex Tang',r:'AR / Invoicing',c:'pp-ar'},{n:'Alexia',r:'Deferrals/Downgrades',c:'pp-ops'},{n:'Brandon',r:'Fee Calculations',c:'pp-accounting'}],
+};
+const DETAILS={
+  'fm-lp-onboarding':{steps:['Fund manager identifies an LP ready to commit','Moves LP from Fundraising pipeline to LP Closing — always COPY, never move','Shares questionnaire link with LP','LP fills questionnaire and signs Cornerstone Agreement','FM notifies VA if LP uses wrong entity type or has issues'],links:[{icon:'🔗',l:'All Accounts Funnel',u:`${HA}/pipelines/g8bXpyNx`,s:'See all Decile Hub fund accounts'},{icon:'💬',l:'#group-venture-associates',u:`${SL}C04DL155JMV`,s:'Main VA coordination channel'}],tip:'Fund managers should always use the "Send LPA" button — not manual copy. It pre-fills the email template and reduces errors.'},
+  'va-front-lp-onboarding':{steps:['Confirm LP entity type before sending LPA (individual vs IRA vs entity)','Send LPA via Email 1A using the "Send LPA" button in LP Closing pipeline','Follow up if questionnaire not completed within 2–3 business days','Communicate AML/KYC may add 1–3 days; set realistic timeline expectations with FM'],links:[{icon:'🔗',l:'VA Hub Account List',u:'https://decileadmin.decilehub.com/blazer/queries/1288-report-teams-venture-associates-hub-account-links-customers?fund_type=-1&user_id_partners_va=0',s:'All accounts and assigned VAs'},{icon:'💬',l:'#group-venture-associates',u:`${SL}C04DL155JMV`,s:'VA team coordination'}],tip:'Always @mention the fund manager in their Base or Slack channel. Stay in threads. Do not reply via DM — keep it in the fund channel so the team can see.'},
+  'va-back-lp-onboarding':{steps:['If LP signed with wrong entity type: delete Cornerstone signature to reopen questionnaire','For IRA: update capital account name to "Strata Trust Co. FBO [Name] IRA [number]"; change vehicle type to IRA','Move LP back to "added hold" stage to reset all automations','For click-to-close migrations: manually advance LP through stages — old questionnaire links bypass automations','Move manual LPs to "close need tax information" (NOT "closed") to prevent unwanted automated emails','Nuclear option: remove LP from pipeline entirely, return to fundraising, re-add with corrected info'],links:[{icon:'🔗',l:'All Accounts Funnel',u:`${HA}/pipelines/g8bXpyNx`,s:'Full account view'},{icon:'💬',l:'#-partners-fund-ops',u:`${SL}C03GEQ2H1QE`,s:'For legal/GP questions during closing'}],tip:'Most common mistake: forgetting to move LP to a new stage after resetting. Always move to "added hold" — this is what triggers the automation reset.'},
+  'support-lp-onboarding':{steps:['Sebastian runs AML/KYC check via Parallel Markets after LP completes questionnaire','For complex entities (trusts, multi-owner LLCs) Sebastian may request additional beneficial owner docs','Sujey handles GP commitment questions or ownership structure issues during closing'],links:[{icon:'💬',l:'#group-venture-associates',u:`${SL}C04DL155JMV`,s:'Coordinate AML/KYC status'},{icon:'💬',l:'#-partners-fund-ops',u:`${SL}C03GEQ2H1QE`,s:'Escalate legal/structure questions'}],tip:'If AML flags a common name, Sebastian may need the LP to go through Parallel Markets — flag this early to the FM so they can manage LP expectations.'},
+  'fm-fund-formation':{steps:['FM completes VC Lab program and accumulates PACs (Preferred Agreements for Capital)','Reaches ~$1M in PACs — triggers fund formation and VA assignment','Provides entity information, GP details, fund structure preferences','Reviews and approves LPA draft from legal team','Executes first close once $1M in signed LPA commitments is reached'],links:[{icon:'🔗',l:'Firm List (All Decile Funds)',u:'https://partners.decilehub.com/pipelines/7NaQLzND',s:'Full pipeline of all Decile funds'},{icon:'💬',l:'#-partners-formation',u:`${SL}C029AT40CKV`,s:'Formation channel — one thread per fund'}],tip:'Post-close, advise FMs to skip PACs entirely and go straight to LPAs. PACs are non-binding and add unnecessary steps once the fund is live.'},
+  'va-front-fund-formation':{steps:['Schedule onboarding call: intro → fundraising pipeline review → demo "Send LPA" flow → set FM expectations','Have FM share their screen — they click, you guide. Open the account separately to navigate ahead','Walk FM through: moving prospects Fundraising → Closing, using Send LPA button','Emphasize: always COPY, never MOVE contacts between pipelines','Set check-in cadence and 1hr business hours SLA'],links:[{icon:'💬',l:'#-partners-formation',u:`${SL}C029AT40CKV`,s:'Formation coordination'},{icon:'💬',l:'#group-venture-associates',u:`${SL}C04DL155JMV`,s:'VA team for guidance'}],tip:'Goal of the first call: FM leaves knowing how to move an LP and send an LPA themselves. Train for self-sufficiency from day one.'},
+  'va-back-fund-formation':{steps:['Coordinate PAC → LPA migration with Fund Ops once $1M PAC threshold is hit','Build LP Closing pipeline in Hub for the new fund','Create fund channel in Base (no longer creating new Slack channels for new formations)','Set up capital account structure for GP commitment','Track formation progress in GitHub VA Project Board'],links:[{icon:'🔗',l:'VA Project Board',u:'https://github.com/orgs/VCLab-Inc/projects/38/views/1',s:'Track formation tasks'},{icon:'💬',l:'#-partners-formation',u:`${SL}C029AT40CKV`,s:'Formation activity'},{icon:'💬',l:'#-partners-fund-ops',u:`${SL}C03GEQ2H1QE`,s:'GP commit & structure questions'}],tip:'New formations are always in Base now. Some legacy funds still use Slack — cross-post as needed but redirect them to Base over time.'},
+  'support-fund-formation':{steps:['Magdalena prepares LPA draft on latest Decile template','GORA Law handles custom LPA modifications (billed separately — always get Alexia/Mike approval first)','Sujey handles GP commitment structure and registered agent setup (Incorporators)','Brandon sets up fund accounting in Hub after first close'],links:[{icon:'💬',l:'#-partners-fund-ops',u:`${SL}C03GEQ2H1QE`,s:'Legal and formation questions'},{icon:'💬',l:'#-partners-formation',u:`${SL}C029AT40CKV`,s:'Formation channel'}],tip:'GORA charges extra for custom LPA edits. Never tell a FM they can customize without Alexia or Mike approval first.'},
+  'fm-capital-ops':{steps:['FM initiates capital call request via Hub or through their Slack/Base channel','Provides LP list, call percentage, and intended use of capital','For distributions: provides proceeds details and desired distribution amounts','Reviews LP wire instructions compiled by Decile before sending wires'],links:[{icon:'💬',l:'#group-va-and-accounting',u:`${SL}C0874824PGB`,s:'VA and accounting coordination'},{icon:'💬',l:'#group-venture-associates',u:`${SL}C04DL155JMV`,s:'VA team channel'}],tip:'FM only sends the final wires — Decile handles everything else: calculations, LP notices, wire instruction collection, and the master list.'},
+  'va-front-capital-ops':{steps:['Confirm capital call % and LP list with FM; validate against current commitments','Set timeline: distributions take 3–5 business days minimum for LP notices','Communicate clearly when FM needs to act (wire sending is their step only)','For K-1s: notify FM of draft financials review window; request approval within 3 business days'],links:[{icon:'💬',l:'#group-va-and-accounting',u:`${SL}C0874824PGB`,s:'Accounting coordination'},{icon:'💬',l:'#group-hub-accounting',u:`${SL}C03CNAC7JNA`,s:'Hub accounting questions'}],tip:'Distributions can require fully manual mail merge + file handling for LP notices — start early. 96 LP notices can take 4+ hours.'},
+  'va-back-capital-ops':{steps:['Coordinate capital call logic with Austin if workarounds needed (e.g. double 10% call + journal entry reset)','For distributions: run mail merge to create individual LP notices','Collect wire instructions from each LP; compile master wire list for FM','Monitor Accounting Standup for K-1 status from Brandon/Katrina','Flag any capital account name mismatches before distribution goes out','Note: commitment increases now go directly to Brandon (no legal review step)'],links:[{icon:'💬',l:'#group-va-and-accounting',u:`${SL}C0874824PGB`,s:'Reconciliation workflow'},{icon:'💬',l:'#group-hub-accounting',u:`${SL}C03CNAC7JNA`,s:'Capital call questions'},{icon:'🔗',l:'Business Summary Dashboard',u:`${HA}/dashboards/business_summary`,s:'Monitor fund health'}],tip:'Never commit to a K-1 date without checking with Brandon first. Use checkpoints ("I\'ll have an update by Thursday") not firm promises.'},
+  'support-capital-ops':{steps:['Brandon calculates distribution amounts and prepares draft fund financials','Brandon/Katrina handle K-1 preparation Jan–Mar — VAs request status and relay to FM','Austin resolves capital call logic issues in Hub','Commitment increases bypass Legal and go straight to Brandon\'s accounting queue'],links:[{icon:'💬',l:'#group-va-and-accounting',u:`${SL}C0874824PGB`,s:'VA + accounting coordination'},{icon:'💬',l:'#group-k1-streamlining',u:`${SL}C09GPSYD1R8`,s:'K-1 process improvements'}],tip:'Commitment increases no longer need legal review — straight to Brandon. If you see a Legal stage in an old pipeline, flag it to Austin to remove.'},
+  'fm-compliance':{steps:['FM receives invoice or letter from FINRA, Incorporators, or state agency','Asks VA whether invoice is legitimate and what action is required','Submits required responses to regulators with VA guidance','For DFPI/SB 54: completes diversity reporting form when required (enforcement paused early 2026)'],links:[{icon:'💬',l:'#group-compliance-essentials',u:`${SL}C09AW66AZGD`,s:'Compliance pipeline tracking'},{icon:'💬',l:'#group-form-adv-filings',u:`${SL}C0ADUP9T8AZ`,s:'ADV filing status'}],tip:'FINRA ADV renewal is $500/year. Before telling a FM an invoice is legitimate, verify timing and payment status with Sebastian first.'},
+  'va-front-compliance':{steps:['Proactively notify FM of upcoming compliance deadlines before invoices arrive','Confirm Form ADV status and FINRA renewal payment annually','Update FM on DFPI/California SB 54 reporting status (check for current enforcement status)','For opted-in funds: walk FM through Compliance Essentials pipeline stages'],links:[{icon:'💬',l:'#group-compliance-essentials',u:`${SL}C09AW66AZGD`,s:'Active compliance tracking'},{icon:'💬',l:'#group-form-adv-filings',u:`${SL}C0ADUP9T8AZ`,s:'ADV coordination'},{icon:'💬',l:'#decile-partners',u:`${SL}C03MTERLZ6F`,s:'Broadcast compliance news to all partners'}],tip:'Post regulatory updates to #decile-partners for broad reach, then follow up in individual fund channels — FMs read direct channel messages more reliably than broadcast posts.'},
+  'va-back-compliance':{steps:['Audit Compliance Essentials pipeline for opted-in funds: FINRA ADV renewal ($500), Delaware entity, registered agent (Incorporators), Form ADV status','Divide audit list among VAs — send accounts with most funds to Alexia','Create folder for FM to submit regulatory invoices and letters','Update pipeline stage manually when FM signs opt-in document (automation still being built by Austin)'],links:[{icon:'💬',l:'#group-compliance-essentials',u:`${SL}C09AW66AZGD`,s:'Compliance Essentials pipeline'},{icon:'💬',l:'#group-form-adv-filings',u:`${SL}C0ADUP9T8AZ`,s:'ADV filing tracking'},{icon:'🔗',l:'VA Project Board',u:'https://github.com/orgs/VCLab-Inc/projects/38/views/1',s:'Track compliance tasks'}],tip:'The Compliance Essentials opt-in pipeline still requires manual stage updates. Austin is automating it — check with him for current status before building workarounds.'},
+  'support-compliance':{steps:['Sebastian runs AML/KYC and manages FINRA/IARD access','Magdalena drafts and files Form ADV; coordinates FINRA renewals with GORA','Sujey manages registered agent via Incorporators (historically GORA-only — gaining direct access)','GORA Law handles all regulatory filings — escalate through Sujey for GORA requests'],links:[{icon:'💬',l:'#group-compliance-essentials',u:`${SL}C09AW66AZGD`,s:'Compliance coordination'},{icon:'💬',l:'#group-form-adv-filings',u:`${SL}C0ADUP9T8AZ`,s:'ADV filing status'},{icon:'💬',l:'#-partners-fund-ops',u:`${SL}C03GEQ2H1QE`,s:'Compliance escalation'}],tip:'GORA can be slow. Always follow up after 5 business days. If waiting 2+ weeks, escalate to Alexia — do not let FM-facing delays build up silently.'},
+  'fm-account-mgmt':{steps:['FM submits request via their Base channel (preferred) or Slack channel','Requests: LP issues, VP agreements, SPV setup, investment questions, product help','FM may also flag issues during scheduled check-in calls'],links:[{icon:'💬',l:'#group-base-community-alerts',u:`${SL}C05SUEAPQP9`,s:'Monitor all Base messages from partners'},{icon:'💬',l:'#group-va-notifications',u:`${SL}C0AJTV9FV7U`,s:'VA notification channel'}],tip:'Set up keyword alerts in Slack for your fund account names — this catches messages even when you\'re not directly tagged.'},
+  'va-front-account-mgmt':{steps:['Respond within 1 hour during business hours — even just to acknowledge','Acknowledge the issue first, then provide solution or next steps','Set clear expectations: what is being done, by whom, by when','Train FM toward self-sufficiency — guide them to do it themselves when possible','For at-risk accounts: proactively reach out based on churn signals from Business Summary Dashboard'],links:[{icon:'🔗',l:'Business Summary Dashboard',u:`${HA}/dashboards/business_summary`,s:'Risk levels and churn signals'},{icon:'💬',l:'#group-venture-associates',u:`${SL}C04DL155JMV`,s:'VA team for guidance'}],tip:'Avoid responding at 3am or weekends — this sets an unsustainable SLA. Handle genuine urgencies; otherwise respond first thing next business day.'},
+  'va-back-account-mgmt':{steps:['Triage and route requests via the appropriate internal channel — not 1:1 with Austin','Tag relevant specialist in Fund Ops / Legal / Accounting rather than routing everything through one person','Create GitHub ticket for issues needing product/engineering','Monitor Business Summary Dashboard nightly for risk levels (Low/Medium/High) and churn signals','Maintain coverage spreadsheet: Hub accounts, assigned secondaries, Slack/Base channels, outstanding items'],links:[{icon:'🔗',l:'VA Hub Account List',u:'https://decileadmin.decilehub.com/blazer/queries/1288-report-teams-venture-associates-hub-account-links-customers?fund_type=-1&user_id_partners_va=0',s:'All accounts and assigned VAs'},{icon:'🔗',l:'Business Summary Dashboard',u:`${HA}/dashboards/business_summary`,s:'Churn signals and risk monitoring'},{icon:'🔗',l:'VA Project Board',u:'https://github.com/orgs/VCLab-Inc/projects/38/views/1',s:'Open issues'},{icon:'💬',l:'#group-task-tracker-triage',u:`${SL}C09MFKK4FQB`,s:'Task triage coordination'}],tip:'Route work visibly in public channels — not 1:1 with Austin. This reduces bottlenecks and trains the AI systems with public channel data.'},
+  'support-account-mgmt':{steps:['Magdalena handles VP agreements, LPAC votes, LPA amendments — fastest turnaround on the team','Sujey handles GP transfers, ownership changes, ManCo modifications, trust structures','Austin resolves Hub product issues, automation bugs, feature questions','Alexia/Mike for strategic decisions: SPV structures, downgrade approvals'],links:[{icon:'💬',l:'#-partners-fund-ops',u:`${SL}C03GEQ2H1QE`,s:'Legal and Fund Ops'},{icon:'💬',l:'#group-spv-launch',u:`${SL}C0ACKS07SDD`,s:'SPV coordination'},{icon:'💬',l:'#account-downgrading',u:`${SL}C0AM3CF4MJ4`,s:'Downgrade process'}],tip:'Program participants get office hours with Mike/Johan/Boris until first close. After first close, VAs handle non-strategy questions — escalate leadership only for strategic decisions.'},
+  'fm-ar-billing':{steps:['FM receives invoice for management fees, operations fees, or Blue Sky fees','May question legitimacy or request payment deferral','Pays invoices or enters downgrade process if non-payment continues'],links:[{icon:'💬',l:'#group-venture-associates',u:`${SL}C04DL155JMV`,s:'VA coordination for AR'},{icon:'💬',l:'#account-downgrading',u:`${SL}C0AM3CF4MJ4`,s:'Downgrade process'}],tip:'If a FM questions an invoice, verify details with Alex Tang before responding — never guess on amounts or due dates.'},
+  'va-front-ar-billing':{steps:['Provide context on what the invoice is for (Blue Sky fee, management fee, operations fee)','If FM requests deferral: do NOT commit — escalate to Alexia and cc Mike for approval','If FM says they cannot afford fees: flag to Alexia and Katherine for downgrade assessment'],links:[{icon:'💬',l:'#group-venture-associates',u:`${SL}C04DL155JMV`,s:'VA channel for AR guidance'},{icon:'💬',l:'#account-downgrading',u:`${SL}C0AM3CF4MJ4`,s:'Downgrade assessment'}],tip:'Alex Tang now leads AR emails — VAs are cc\'d. If follow-up is needed, Alex moves to Slack/Base channel. Don\'t duplicate AR outreach.'},
+  'va-back-ar-billing':{steps:['Monitor cc\'d AR emails from Alex Tang for your accounts','Flag accounts with mounting outstanding invoices or churn signals to Alexia early','For Blue Sky: Decile pays quarterly on FM\'s behalf, then Alex sends advance email before recouping','Assist in downgrade documentation if FM is non-responsive to payment for 12+ months'],links:[{icon:'🔗',l:'Business Summary Dashboard',u:`${HA}/dashboards/business_summary`,s:'Churn signals and AR risk'},{icon:'💬',l:'#account-downgrading',u:`${SL}C0AM3CF4MJ4`,s:'Downgrade coordination'}],tip:'Downgrade funds ~1 year post first close when fundraising stalls — maintain the relationship for Fund II. Actual churn is only for 12+ months non-payment or total non-responsiveness.'},
+  'support-ar-billing':{steps:['Alex Tang sends invoices and manages all AR communications — VAs are cc\'d','Alex sends advance notice of Blue Sky fee recoupment with EFD payment receipt','Alexia approves payment deferrals and downgrade decisions','Brandon provides fee calculation inputs for management and operations fees'],links:[{icon:'💬',l:'#group-venture-associates',u:`${SL}C04DL155JMV`,s:'AR coordination'},{icon:'💬',l:'#account-downgrading',u:`${SL}C0AM3CF4MJ4`,s:'Downgrade process channel'}],tip:'Alex only escalates to Slack if email AR outreach doesn\'t get a response. Let him lead on AR — your role is context and relationship management.'},
+};
+
+const BADGE={fm:{label:'Fund Manager',bg:'#eef2ff',c:'#3730a3'},'va-front':{label:'VA Frontstage',bg:'#f0fdf4',c:'#166534'},'va-back':{label:'VA Backstage',bg:'#fff7ed',c:'#9a3412'},support:{label:'Support Process',bg:'#faf5ff',c:'#6b21a8'}};
+const SCOL={fm:{bg:'#c7d2fe',c:'#3730a3'},'va-front':{bg:'#bbf7d0',c:'#166534'},'va-back':{bg:'#fed7aa',c:'#9a3412'},support:{bg:'#e9d5ff',c:'#6b21a8'}};
+
+let data={cards:[
+  {id:'c1',layer:'fm',workflow:'lp-onboarding',title:'Sends LP to closing pipeline',body:'Moves LP from Fundraising → LP Closing'},
+  {id:'c2',layer:'va-front',workflow:'lp-onboarding',title:'Sends LPA via Email 1A',body:'Confirms entity type; uses "Send LPA" button'},
+  {id:'c3',layer:'va-back',workflow:'lp-onboarding',title:'Resets questionnaire if needed',body:'Deletes Cornerstone sig; updates IRA format; resets automations'},
+  {id:'c4',layer:'fm',workflow:'fund-formation',title:'Reaches $1M in PACs',body:'Fund ready to form; VA assigned'},
+  {id:'c5',layer:'va-front',workflow:'fund-formation',title:'Onboarding call with FM',body:'Intro → pipeline review → demo Send LPA'},
+  {id:'c6',layer:'va-back',workflow:'fund-formation',title:'Builds LP Closing pipeline',body:'PAC → LPA conversion; creates Base channel'},
+  {id:'c7',layer:'fm',workflow:'capital-ops',title:'Requests capital call or distribution',body:'Flags via Hub or Slack/Base channel'},
+  {id:'c8',layer:'va-front',workflow:'capital-ops',title:'Confirms structure with FM',body:'Validates call %, LP list, sets timeline'},
+  {id:'c9',layer:'va-back',workflow:'capital-ops',title:'Coordinates LP notices',body:'Mail merge; collects wire instructions; master list'},
+  {id:'c10',layer:'fm',workflow:'compliance',title:'Receives FINRA/ADV notice',body:'Asks VA if invoice is legitimate'},
+  {id:'c11',layer:'va-front',workflow:'compliance',title:'Notifies FM of deadlines',body:'DFPI/SB 54 status; compliance update'},
+  {id:'c12',layer:'va-back',workflow:'compliance',title:'Audits compliance pipeline',body:'FINRA $500, Delaware, registered agent, Form ADV'},
+  {id:'c13',layer:'fm',workflow:'account-mgmt',title:'Submits request via Base or Slack',body:'LP issues, VP agreements, SPV, product questions'},
+  {id:'c14',layer:'va-front',workflow:'account-mgmt',title:'Responds within 1hr (biz hours)',body:'Acknowledges; sets expectations; trains FM self-sufficiency'},
+  {id:'c15',layer:'va-back',workflow:'account-mgmt',title:'Triages & routes internally',body:'Tags specialists; GitHub board; monitors risk dashboard'},
+  {id:'c16',layer:'fm',workflow:'ar-billing',title:'Receives invoice or fee notice',body:'Queries legitimacy or requests deferral'},
+  {id:'c17',layer:'va-front',workflow:'ar-billing',title:'Provides context & escalates',body:'Explains fee; escalates deferral to Alexia/Mike'},
+  {id:'c18',layer:'va-back',workflow:'ar-billing',title:'Monitors cc\'d AR emails',body:'Flags at-risk accounts; assists downgrade docs'},
+]};
+
+function gc(l,w){return data.cards.filter(c=>c.layer===l&&c.workflow===w)}
+function dk(l,w){return`${l}-${w}`}
+
+function renderView(){
+  const bp=document.getElementById('blueprint-view');
+  let h='<div class="workflow-header-row"><div class="row-label-spacer"></div><div class="workflow-headers">';
+  WF.forEach(w=>{h+=`<div class="workflow-header ${w.cc}">${w.label}</div>`;});
+  h+='</div></div>';
+  LY.forEach(ly=>{
+    h+=`<div class="layer-row"><div class="row-label"><div class="row-label-name">${ly.label}</div><div class="row-label-desc">${ly.desc}</div></div><div class="row-cells">`;
+    WF.forEach(w=>{
+      h+=`<div class="cell ${ly.cls}">`;
+      if(ly.id==='support'){
+        const pp=PEOPLE[w.id]||[];
+        if(!pp.length){h+='<div class="empty-placeholder">—</div>';}
+        else pp.forEach(p=>{h+=`<div class="person-pill ${p.c}" onclick="openD('${dk('support',w.id)}','${p.n} — ${p.r}','support')"><span class="pill-name">${p.n}</span><span class="pill-role">${p.r}</span></div>`;});
+      } else {
+        const cards=gc(ly.id,w.id);
+        if(!cards.length){h+='<div class="empty-placeholder">—</div>';}
+        else cards.forEach(card=>{h+=`<div class="card" onclick="openD('${dk(ly.id,w.id)}','${eJ(card.title)}','${ly.id}')"><div class="card-title">${card.title}</div><div class="card-body">${card.body}</div><div class="card-hint">Click for details →</div></div>`;});
+      }
+      h+='</div>';
+    });
+    h+='</div></div>';
+    const dv=DIV.find(d=>d.after===ly.id);
+    if(dv)h+=`<div class="divider-row ${dv.cls}"><div class="divider-label">${dv.label}</div><div style="flex:1"></div></div>`;
+  });
+  bp.innerHTML=h;
+}
+
+function openD(key,title,layerId){
+  const d=DETAILS[key];if(!d)return;
+  const b=BADGE[layerId]||BADGE.support;
+  const sc=SCOL[layerId]||SCOL.support;
+  document.getElementById('drawer-title').textContent=title;
+  const badgeEl=document.getElementById('drawer-badge');
+  badgeEl.textContent=b.label;badgeEl.style.background=b.bg;badgeEl.style.color=b.c;
+  let html='';
+  if(d.steps&&d.steps.length){
+    html+=`<div><div class="dsec-label">How to execute</div><div class="drawer-steps">`;
+    d.steps.forEach((s,i)=>html+=`<div class="drawer-step"><div class="step-num" style="background:${sc.bg};color:${sc.c}">${i+1}</div><div class="step-text">${s}</div></div>`);
+    html+=`</div></div>`;
+  }
+  if(d.links&&d.links.length){
+    html+=`<div><div class="dsec-label">Useful links & channels</div><div class="drawer-links">`;
+    d.links.forEach(lk=>html+=`<a class="dlink" href="${lk.u}" target="_blank" rel="noopener"><span class="dlink-icon">${lk.icon}</span><div style="flex:1"><div>${lk.l}</div><div class="dlink-sub">${lk.s}</div></div><span style="color:#bbb;font-size:12px">↗</span></a>`);
+    html+=`</div></div>`;
+  }
+  if(d.tip)html+=`<div class="drawer-tip"><span style="font-weight:600">Tip from the team: </span>${d.tip}</div>`;
+  document.getElementById('drawer-body').innerHTML=html;
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+function closeDrawer(){document.getElementById('drawer-overlay').classList.remove('open');document.getElementById('drawer').classList.remove('open');}
+
+/* ── FULL EDIT MODE ─────────────────────────────────────────────── */
+let expandedCards={};
+
+function renderEdit(){
+  const w=document.getElementById('edit-wrap');
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+    <div><div style="font-size:18px;font-weight:600;margin-bottom:3px">Edit blueprint</div>
+    <div style="font-size:13px;color:#888">Click any card to expand and edit all its details — steps, links, tip, and support people.</div></div>
+    <button class="btn" onclick="addCard()">+ Add card</button></div>`;
+
+  /* ── card sections by layer ── */
+  LY.filter(l=>l.id!=='support').forEach(ly=>{
+    const lc=data.cards.filter(c=>c.layer===ly.id);
+    h+=`<div class="edit-section">
+      <div class="edit-sec-hdr"><div class="edit-sec-title">${ly.label}</div><div style="font-size:12px;color:#888">${ly.desc}</div></div>
+      <div class="edit-cards-grid" id="elayer-${ly.id}">`;
+    lc.forEach(card=>{h+=buildEditCard(card,ly.id);});
+    h+=`</div><button class="add-card-btn" onclick="addCL('${ly.id}')">+ Add card to ${ly.label}</button></div>`;
+  });
+
+  /* ── support people section ── */
+  h+=`<div class="edit-section">
+    <div class="edit-sec-hdr"><div class="edit-sec-title">Support Processes — People</div>
+    <div style="font-size:12px;color:#888">Edit the individual person pills shown in the Support row</div></div>
+    <div style="padding:14px 18px;display:flex;flex-direction:column;gap:18px">`;
+  WF.forEach(wf=>{
+    const pp=PEOPLE[wf.id]||[];
+    h+=`<div><div style="font-size:12px;font-weight:600;color:#555;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <span>${wf.label}</span>
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="addPerson('${wf.id}')">+ Add person</button>
+    </div>
+    <div class="person-list" id="plist-${wf.id}">`;
+    pp.forEach((p,i)=>{h+=buildPersonRow(wf.id,i,p);});
+    h+=`</div></div>`;
+  });
+  h+=`</div></div>`;
+
+  w.innerHTML=h;
+  /* restore expanded state */
+  Object.keys(expandedCards).forEach(id=>{
+    if(expandedCards[id]){
+      const body=document.getElementById('ecbody-'+id);
+      const chev=document.getElementById('ecchev-'+id);
+      if(body){body.classList.add('open');}
+      if(chev){chev.classList.add('open');}
+    }
+  });
+}
+
+function buildEditCard(card,layerId){
+  const wo=WF.map(w=>`<option value="${w.id}"${card.workflow===w.id?' selected':''}>${w.label}</option>`).join('');
+  const lo=LY.filter(l=>l.id!=='support').map(l=>`<option value="${l.id}"${card.layer===l.id?' selected':''}>${l.label}</option>`).join('');
+  const dk2=`${card.layer}-${card.workflow}`;
+  const det=DETAILS[dk2]||{steps:[],links:[],tip:''};
+  const stepsHtml=buildStepsList(card.id,det.steps||[]);
+  const linksHtml=buildLinksList(card.id,det.links||[]);
+  const tipVal=eH(det.tip||'');
+
+  return `<div class="edit-card" data-id="${card.id}">
+    <div class="edit-card-top" onclick="toggleCard('${card.id}')">
+      <span class="drag-handle" title="Coming soon">⠿</span>
+      <div class="edit-card-summary">
+        <div class="edit-card-stitle" id="ecstitle-${card.id}">${eH(card.title)}</div>
+        <div class="edit-card-smeta">${WF.find(w=>w.id===card.workflow)?.label||card.workflow}</div>
+      </div>
+      <span class="edit-card-chevron" id="ecchev-${card.id}">▶</span>
+      <button class="del-btn" onclick="event.stopPropagation();delC('${card.id}')" title="Delete card">×</button>
+    </div>
+    <div class="edit-card-body" id="ecbody-${card.id}">
+      <div>
+        <div class="ef-label">Card title (shown on blueprint)</div>
+        <input class="ei" value="${eH(card.title)}" placeholder="Card title"
+          oninput="updCard('${card.id}','title',this.value);document.getElementById('ecstitle-${card.id}').textContent=this.value">
+      </div>
+      <div>
+        <div class="ef-label">Short description (shown on blueprint)</div>
+        <input class="ei" value="${eH(card.body)}" placeholder="One-line summary"
+          oninput="updCard('${card.id}','body',this.value)">
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:160px">
+          <div class="ef-label">Workflow column</div>
+          <select class="es" style="width:100%" onchange="updCard('${card.id}','workflow',this.value);renderView()">${wo}</select>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <div class="ef-label">Layer row</div>
+          <select class="es" style="width:100%" onchange="updCard('${card.id}','layer',this.value);renderView()">${lo}</select>
+        </div>
+      </div>
+      <div>
+        <div class="ef-label">How to execute — steps (shown in drawer)</div>
+        <div class="step-list" id="steps-${card.id}">${stepsHtml}</div>
+        <button class="add-row-btn" onclick="addStep('${card.id}')">+ Add step</button>
+      </div>
+      <div>
+        <div class="ef-label">Useful links & channels (shown in drawer)</div>
+        <div class="link-list" id="links-${card.id}">${linksHtml}</div>
+        <button class="add-row-btn" onclick="addLink('${card.id}')">+ Add link</button>
+      </div>
+      <div>
+        <div class="ef-label">Tip from the team (shown in drawer)</div>
+        <textarea class="eta tip-textarea" placeholder="Optional tip visible in the detail drawer…"
+          oninput="updDetail('${card.id}','tip',this.value)">${tipVal}</textarea>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildStepsList(cardId,steps){
+  return steps.map((s,i)=>`<div class="step-row" data-card="${cardId}" data-si="${i}">
+    <div class="step-num-badge">${i+1}</div>
+    <textarea class="eta" style="flex:1" rows="2"
+      oninput="updStep('${cardId}',${i},this.value)">${eH(s)}</textarea>
+    <button class="del-btn" style="margin-top:4px" onclick="delStep('${cardId}',${i})">×</button>
+  </div>`).join('');
+}
+
+function buildLinksList(cardId,links){
+  return links.map((lk,i)=>`<div class="link-row" data-card="${cardId}" data-li="${i}">
+    <div class="link-fields">
+      <div class="link-row-inner">
+        <input class="ei" style="width:44px;flex-shrink:0" value="${eH(lk.icon||'🔗')}" placeholder="🔗"
+          oninput="updLink('${cardId}',${i},'icon',this.value)">
+        <input class="ei" style="flex:1" value="${eH(lk.l||'')}" placeholder="Link label"
+          oninput="updLink('${cardId}',${i},'l',this.value)">
+      </div>
+      <input class="ei" value="${eH(lk.u||'')}" placeholder="https://…"
+        oninput="updLink('${cardId}',${i},'u',this.value)">
+      <input class="ei" value="${eH(lk.s||'')}" placeholder="Short description"
+        oninput="updLink('${cardId}',${i},'s',this.value)">
+    </div>
+    <button class="del-btn" onclick="delLink('${cardId}',${i})">×</button>
+  </div>`).join('');
+}
+
+function buildPersonRow(wfId,i,p){
+  const colorOpts=['pp-legal','pp-fundops','pp-accounting','pp-tech','pp-ops','pp-ar'].map(c=>
+    `<option value="${c}"${p.c===c?' selected':''}>${c.replace('pp-','')}</option>`).join('');
+  return `<div class="person-row" data-wf="${wfId}" data-pi="${i}">
+    <div class="person-fields">
+      <input class="ei" style="flex:2;min-width:100px" value="${eH(p.n)}" placeholder="Name"
+        oninput="updPerson('${wfId}',${i},'n',this.value)">
+      <input class="ei" style="flex:2;min-width:100px" value="${eH(p.r)}" placeholder="Role"
+        oninput="updPerson('${wfId}',${i},'r',this.value)">
+      <select class="es" onchange="updPerson('${wfId}',${i},'c',this.value)">${colorOpts}</select>
+    </div>
+    <button class="del-btn" onclick="delPerson('${wfId}',${i})">×</button>
+  </div>`;
+}
+
+function toggleCard(id){
+  expandedCards[id]=!expandedCards[id];
+  const body=document.getElementById('ecbody-'+id);
+  const chev=document.getElementById('ecchev-'+id);
+  body&&body.classList.toggle('open',expandedCards[id]);
+  chev&&chev.classList.toggle('open',expandedCards[id]);
+}
+
+/* ── detail data helpers ── */
+function getDetail(cardId){
+  const card=data.cards.find(c=>c.id===cardId);
+  if(!card)return null;
+  const key=`${card.layer}-${card.workflow}`;
+  if(!DETAILS[key])DETAILS[key]={steps:[],links:[],tip:''};
+  return DETAILS[key];
+}
+
+function updCard(id,f,v){const c=data.cards.find(c=>c.id===id);if(c){c[f]=v;sv();renderView();}}
+
+function updDetail(cardId,field,val){
+  const d=getDetail(cardId);if(!d)return;
+  d[field]=val;sv();
+}
+
+function updStep(cardId,idx,val){
+  const d=getDetail(cardId);if(!d)return;
+  if(!d.steps)d.steps=[];
+  d.steps[idx]=val;sv();
+}
+function addStep(cardId){
+  const d=getDetail(cardId);if(!d)return;
+  if(!d.steps)d.steps=[];
+  d.steps.push('New step');sv();
+  const el=document.getElementById('steps-'+cardId);
+  if(el){el.innerHTML=buildStepsList(cardId,d.steps);}
+}
+function delStep(cardId,idx){
+  const d=getDetail(cardId);if(!d)return;
+  d.steps.splice(idx,1);sv();
+  const el=document.getElementById('steps-'+cardId);
+  if(el){el.innerHTML=buildStepsList(cardId,d.steps);}
+}
+
+function updLink(cardId,idx,field,val){
+  const d=getDetail(cardId);if(!d)return;
+  if(!d.links)d.links=[];
+  if(!d.links[idx])d.links[idx]={icon:'🔗',l:'',u:'',s:''};
+  d.links[idx][field]=val;sv();
+}
+function addLink(cardId){
+  const d=getDetail(cardId);if(!d)return;
+  if(!d.links)d.links=[];
+  d.links.push({icon:'🔗',l:'New link',u:'https://',s:'Description'});sv();
+  const el=document.getElementById('links-'+cardId);
+  if(el){el.innerHTML=buildLinksList(cardId,d.links);}
+}
+function delLink(cardId,idx){
+  const d=getDetail(cardId);if(!d)return;
+  d.links.splice(idx,1);sv();
+  const el=document.getElementById('links-'+cardId);
+  if(el){el.innerHTML=buildLinksList(cardId,d.links);}
+}
+
+function updPerson(wfId,idx,field,val){
+  if(!PEOPLE[wfId])PEOPLE[wfId]=[];
+  if(!PEOPLE[wfId][idx])PEOPLE[wfId][idx]={n:'',r:'',c:'pp-legal'};
+  PEOPLE[wfId][idx][field]=val;sv();renderView();
+}
+function addPerson(wfId){
+  if(!PEOPLE[wfId])PEOPLE[wfId]=[];
+  PEOPLE[wfId].push({n:'Name',r:'Role',c:'pp-legal'});sv();renderView();
+  const el=document.getElementById('plist-'+wfId);
+  if(el){el.innerHTML=PEOPLE[wfId].map((p,i)=>buildPersonRow(wfId,i,p)).join('');}
+}
+function delPerson(wfId,idx){
+  if(!PEOPLE[wfId])return;
+  PEOPLE[wfId].splice(idx,1);sv();renderView();
+  const el=document.getElementById('plist-'+wfId);
+  if(el){el.innerHTML=PEOPLE[wfId].map((p,i)=>buildPersonRow(wfId,i,p)).join('');}
+}
+
+function eH(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function eJ(s){return(s||'').replace(/'/g,"\\'").replace(/</g,'').replace(/>/g,'')}
+function delC(id){if(!confirm('Delete this card?'))return;data.cards=data.cards.filter(c=>c.id!==id);sv();renderView();renderEdit();}
+function addCL(l){
+  const nc={id:'c'+Date.now(),layer:l,workflow:WF[0].id,title:'New card',body:'Add description'};
+  data.cards.push(nc);expandedCards[nc.id]=true;sv();renderView();renderEdit();
+  setTimeout(()=>{const el=document.querySelector(`[data-id="${nc.id}"] .ei`);if(el){el.focus();el.select();}},120);
+}
+function addCard(){addCL(LY[0].id);}
+let dsi=null;
+function ds(e){dsi=e.currentTarget.closest('.edit-card')?.dataset.id;e.dataTransfer.effectAllowed='move';}
+function dov(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
+function drp(e){e.preventDefault();const ti=e.currentTarget.closest('.edit-card')?.dataset.id;if(!dsi||!ti||dsi===ti)return;const si=data.cards.findIndex(c=>c.id===dsi);const tix=data.cards.findIndex(c=>c.id===ti);const[m]=data.cards.splice(si,1);data.cards.splice(tix,0,m);sv();renderView();renderEdit();}
+const SAVE_KEY='va-bp-v3';
+function sv(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:3,cards:data.cards,details:DETAILS,people:PEOPLE}));}catch(e){}}
+function lv(){
+  try{['va-bp','va-bp2'].forEach(k=>localStorage.removeItem(k));}catch(e){}
+  try{
+    const s=localStorage.getItem(SAVE_KEY);
+    if(!s)return;
+    const p=JSON.parse(s);
+    if(p.v===3&&Array.isArray(p.cards)&&p.cards.length>0){
+      data.cards=p.cards;
+      if(p.details)Object.assign(DETAILS,p.details);
+      if(p.people)Object.assign(PEOPLE,p.people);
+    } else {
+      localStorage.removeItem(SAVE_KEY);
+    }
+  }catch(e){localStorage.removeItem(SAVE_KEY);}
+}
+
+let em=false;
+document.getElementById('toggle-edit-btn').addEventListener('click',()=>{
+  em=!em;
+  document.getElementById('mode-view').classList.toggle('active',!em);
+  document.getElementById('mode-edit').classList.toggle('active',em);
+  document.getElementById('mode-badge').textContent=em?'Edit mode':'View mode';
+  document.getElementById('toggle-edit-btn').textContent=em?'View blueprint':'Edit blueprint';
+  if(em)renderEdit();else renderView();
+});
+document.getElementById('share-btn').addEventListener('click',()=>{
+  const base=window.location.href.split('?')[0];
+  document.getElementById('vlink').value=base+'?mode=view';
+  document.getElementById('elink').value=base+'?mode=edit';
+  document.getElementById('share-modal').classList.add('open');
+});
+document.getElementById('share-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('open');});
+function copyLink(iid,mid){const inp=document.getElementById(iid);inp.select();try{document.execCommand('copy');}catch(e){navigator.clipboard&&navigator.clipboard.writeText(inp.value);}const m=document.getElementById(mid);m.classList.add('show');setTimeout(()=>m.classList.remove('show'),2500);}
+document.getElementById('export-btn').addEventListener('click', exportFile);
+
+function exportFile(){
+  /* Grab the current page HTML */
+  const src = document.documentElement.outerHTML;
+
+  /* ── Serialise live state into JS literal replacements ── */
+  const safeJSON = (obj) => JSON.stringify(obj)
+    .replace(/<\/script>/gi, '<\\/script>')   // prevent early script close
+    .replace(/`/g, '\\`');                    // escape backticks
+
+  const cardsJSON   = safeJSON(data.cards);
+  const detailsJSON = safeJSON(DETAILS);
+  const peopleJSON  = safeJSON(PEOPLE);
+
+  /* Replace the three data initialisers in the source.
+     Each one is an assignment that ends before the next const/let/var. */
+  let out = src;
+
+  /* 1. data = { cards: [...] } */
+  out = out.replace(
+    /let data=\{cards:\[[\s\S]*?\]\}/,
+    `let data={cards:${cardsJSON}}`
+  );
+
+  /* 2. DETAILS = { ... } — replace up to but not including "const BADGE" */
+  out = out.replace(
+    /const DETAILS=\{[\s\S]*?\};\nconst BADGE/,
+    `const DETAILS=${detailsJSON};\nconst BADGE`
+  );
+
+  /* 3. PEOPLE = { ... } — replace up to but not including "const DETAILS" */
+  out = out.replace(
+    /const PEOPLE=\{[\s\S]*?\};\nconst DETAILS/,
+    `const PEOPLE=${peopleJSON};\nconst DETAILS`
+  );
+
+  /* Trigger download */
+  const blob = new Blob([out], {type:'text/html'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const ts   = new Date().toISOString().slice(0,10);
+  a.href     = url;
+  a.download = `va-service-blueprint-${ts}.html`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+
+  /* Brief visual feedback on the button */
+  const btn = document.getElementById('export-btn');
+  const orig = btn.textContent;
+  btn.textContent = 'Downloaded!';
+  btn.style.color = '#16a34a';
+  btn.style.borderColor = '#bbf7d0';
+  setTimeout(()=>{ btn.textContent=orig; btn.style.color=''; btn.style.borderColor=''; }, 2200);
+}
+lv();renderView();
+const um=new URLSearchParams(window.location.search).get('mode');
+if(um==='edit'){em=true;document.getElementById('mode-view').classList.remove('active');document.getElementById('mode-edit').classList.add('active');document.getElementById('mode-badge').textContent='Edit mode';document.getElementById('toggle-edit-btn').textContent='View blueprint';renderEdit();}
+</script>
+</body>
+</html>
